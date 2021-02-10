@@ -110,6 +110,11 @@ export default class RoomTile extends React.PureComponent<IProps, IState> {
             CommunityPrototypeStore.getUpdateEventName(this.props.room.roomId),
             this.onCommunityUpdate,
         );
+        this.props.room.on("Room.name", this.onRoomNameUpdate);
+    }
+
+    private onRoomNameUpdate = (room) => {
+        this.forceUpdate();
     }
 
     private onNotificationUpdate = () => {
@@ -150,6 +155,8 @@ export default class RoomTile extends React.PureComponent<IProps, IState> {
                 CommunityPrototypeStore.getUpdateEventName(this.props.room?.roomId),
                 this.onCommunityUpdate,
             );
+            prevProps.room?.off("Room.name", this.onRoomNameUpdate);
+            this.props.room?.on("Room.name", this.onRoomNameUpdate);
         }
     }
 
@@ -171,6 +178,7 @@ export default class RoomTile extends React.PureComponent<IProps, IState> {
                 CommunityPrototypeStore.getUpdateEventName(this.props.room.roomId),
                 this.onCommunityUpdate,
             );
+            this.props.room.off("Room.name", this.onRoomNameUpdate);
         }
         defaultDispatcher.unregister(this.dispatcherRef);
         this.notificationState.off(NOTIFICATION_STATE_UPDATE, this.onNotificationUpdate);
@@ -498,6 +506,7 @@ export default class RoomTile extends React.PureComponent<IProps, IState> {
             'mx_RoomTile_selected': this.state.selected,
             'mx_RoomTile_hasMenuOpen': !!(this.state.generalMenuPosition || this.state.notificationsMenuPosition),
             'mx_RoomTile_minimized': this.props.isMinimized,
+            'mx_RoomTile_space': this.props.room?.isSpaceRoom(), // this'll be a Space invite
         });
 
         let roomProfile: IRoomProfile = {displayName: null, avatarMxc: null};

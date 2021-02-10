@@ -54,6 +54,7 @@ import { ToggleRightPanelPayload } from "../../dispatcher/payloads/ToggleRightPa
 import { IThreepidInvite } from "../../stores/ThreepidInviteStore";
 import Modal from "../../Modal";
 import { ICollapseConfig } from "../../resizer/distributors/collapse";
+import {IOpts} from "../../createRoom";
 
 // We need to fetch each pinned message individually (if we don't already have it)
 // so each pinned message may trigger a request. Limit the number per room for sanity.
@@ -90,6 +91,7 @@ interface IProps {
     currentGroupId?: string;
     currentGroupIsNew?: boolean;
     justRegistered?: boolean;
+    roomJustCreatedOpts?: IOpts;
 }
 
 interface IUsageLimit {
@@ -215,10 +217,19 @@ class LoggedInView extends React.Component<IProps, IState> {
 
     _createResizer() {
         let size;
+        let collapsed;
         const collapseConfig: ICollapseConfig = {
-            toggleSize: 260 - 50,
-            onCollapsed: (collapsed) => {
-                if (collapsed) {
+            // TODO: the space panel currently does not have a fixed width,
+            // just the headers at each level have a max-width of 150px
+            // Taking 222px for the space panel for now,
+            // so this will look slightly off for now,
+            // depending on the depth of your space tree.
+            // To fix this, we'll need to turn toggleSize
+            // into a callback so it can be measured when starting the resize operation
+            toggleSize: 222 + 68,
+            onCollapsed: (_collapsed) => {
+                collapsed = _collapsed;
+                if (_collapsed) {
                     dis.dispatch({action: "hide_left_panel"}, true);
                     window.localStorage.setItem("mx_lhs_size", '0');
                 } else {
@@ -233,8 +244,11 @@ class LoggedInView extends React.Component<IProps, IState> {
                 this.props.resizeNotifier.startResizing();
             },
             onResizeStop: () => {
-                window.localStorage.setItem("mx_lhs_size", '' + size);
+                if (!collapsed) window.localStorage.setItem("mx_lhs_size", '' + size);
                 this.props.resizeNotifier.stopResizing();
+            },
+            isItemCollapsed: domNode => {
+                return domNode.classList.contains("mx_LeftPanel_minimized");
             },
         };
         const resizer = new Resizer(this._resizeContainer.current, CollapseDistributor, collapseConfig);
@@ -588,6 +602,7 @@ class LoggedInView extends React.Component<IProps, IState> {
                     viaServers={this.props.viaServers}
                     key={this.props.currentRoomId || 'roomview'}
                     resizeNotifier={this.props.resizeNotifier}
+                    justCreatedOpts={this.props.roomJustCreatedOpts}
                 />;
                 break;
 
